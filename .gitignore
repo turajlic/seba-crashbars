@@ -1,0 +1,34 @@
+# === CMS runtime / secrets — nikad na GitHub ===
+data/users.json
+data/attempts.json
+
+# === uploads/ — korisnički sadržaj, ne prati se u gitu ===
+# Izuzeci ispod: brend fajlovi koji su deo dizajna i .htaccess/index.html
+uploads/*
+!uploads/.htaccess
+!uploads/index.html
+!uploads/favicon.png
+!uploads/seba-logo_2x.png
+!uploads/seba-crashbar.png
+!uploads/Seba-Crashbar-home-slider2.jpg
+
+# === lokalni test/backup fajlovi ===
+content.backup.json
+content.json.bak-*
+*.tmp
+.DS_Store
+Thumbs.db
+
+# === lokalna Claude Code podešavanja ===
+.claude/settings.local.json
+
+# ============================================================
+# VAŽNO — content.json:
+# Trenutno je NAMERNO UKLJUČEN u git (ne u listi iznad) da server
+# pri prvom deployu dobije početni sadržaj sajta.
+#
+# ODMAH POSLE PRVOG DEPLOYA: dodaj ovde liniju
+#   content.json
+# da budući `git pull` na hostingu ne bi pregazio Sebin živi
+# sadržaj (izmene kroz admin panel) verzijom iz repoa.
+# ============================================================
