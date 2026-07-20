@@ -103,11 +103,12 @@ switch ($action) {
         if ($info === false) json_out(['ok' => false, 'error' => 'Datoteka nije ispravna slika.'], 400);
 
         /* re-enkodiranje kroz GD: uklanja metapodatke i eventualni ugrađen sadržaj */
-        $src = match ($mime) {
-            'image/jpeg' => @imagecreatefromjpeg($f['tmp_name']),
-            'image/png'  => @imagecreatefrompng($f['tmp_name']),
-            'image/webp' => @imagecreatefromwebp($f['tmp_name']),
-        };
+        /* switch umesto match() — match je PHP 8.0+ sintaksa, ne bi se ni parsirala na 7.4 */
+        switch ($mime) {
+            case 'image/jpeg': $src = @imagecreatefromjpeg($f['tmp_name']); break;
+            case 'image/png':  $src = @imagecreatefrompng($f['tmp_name']); break;
+            default:           $src = @imagecreatefromwebp($f['tmp_name']); break;
+        }
         if (!$src) json_out(['ok' => false, 'error' => 'Slika ne može da se obradi.'], 400);
 
         $w = imagesx($src); $h = imagesy($src);
@@ -124,11 +125,11 @@ switch ($action) {
         $ext = $mime === 'image/png' ? 'png' : ($mime === 'image/webp' ? 'webp' : 'jpg');
         $name = date('Ymd') . '-' . bin2hex(random_bytes(6)) . '.' . $ext;
         $dest = SEBA_UPLOADS . '/' . $name;
-        $ok = match ($ext) {
-            'jpg'  => imagejpeg($src, $dest, 84),
-            'png'  => imagepng($src, $dest, 7),
-            'webp' => imagewebp($src, $dest, 84),
-        };
+        switch ($ext) {
+            case 'jpg':  $ok = imagejpeg($src, $dest, 84); break;
+            case 'png':  $ok = imagepng($src, $dest, 7); break;
+            default:     $ok = imagewebp($src, $dest, 84); break;
+        }
         if (!$ok) json_out(['ok' => false, 'error' => 'Čuvanje slike nije uspelo.'], 500);
         @chmod($dest, 0644);
         json_out(['ok' => true, 'path' => 'uploads/' . $name]);

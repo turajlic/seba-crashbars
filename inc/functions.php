@@ -18,6 +18,13 @@ if (!function_exists('mb_strlen')) {
     function mb_strlen(string $s): int { return strlen($s); }
 }
 
+/* fallback za PHP < 8.0 */
+if (!function_exists('str_starts_with')) {
+    function str_starts_with(string $haystack, string $needle): bool {
+        return $needle === '' || strncmp($haystack, $needle, strlen($needle)) === 0;
+    }
+}
+
 function e(?string $s): string {
     return htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
 }
@@ -146,7 +153,8 @@ function login_clear_failures(): void {
 
 /* ---------- JSON odgovor za admin AJAX ---------- */
 
-function json_out(array $payload, int $code = 200): never {
+/* bez return tipa namerno — "never" je PHP 8.1+, ova funkcija uvek zove exit() */
+function json_out(array $payload, int $code = 200) {
     /* odbaci sve što je eventualno već ispisano (notice/warning/deprecated, whitespace...)
        da odgovor ostane čist JSON bez obzira šta se dogodilo ranije u skriptu */
     while (ob_get_level() > 0) { ob_end_clean(); }
