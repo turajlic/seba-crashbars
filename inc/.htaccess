@@ -1,1 +1,11 @@
-Require all denied
+# Blokiraj sav direktan web pristup ovom folderu (funkcije, sablon, seme).
+# IfModule zastita: radi i na Apache 2.4 (mod_authz_core) i na starijem stilu
+# (mod_access_compat / Apache 2.2), umesto da pukne kad modul fali.
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+</IfModule>

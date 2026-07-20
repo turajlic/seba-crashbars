@@ -1,11 +1,24 @@
+# SEBA Crash Bars — root .htaccess
+# Sve direktive koje zavise od modula su umotane u <IfModule> da neucitan
+# modul ne obori server sa HTTP 500 (ovo se desilo na Telekom cPanel hostingu
+# sa php_flag i Options -ExecCGI — namerno ih NEMA ovde).
+
 Options -Indexes
 
-<FilesMatch "^content\.json">
-  Require all denied
-</FilesMatch>
+# Blokiraj direktan web pristup content.json (menja se samo preko admin panela)
+<Files "content.json">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
 
+# Bezbednosni headeri — samo ako je mod_headers ucitan
 <IfModule mod_headers.c>
-  Header set X-Content-Type-Options "nosniff"
-  Header set X-Frame-Options "SAMEORIGIN"
-  Header set Referrer-Policy "strict-origin-when-cross-origin"
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>

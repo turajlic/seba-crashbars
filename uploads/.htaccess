@@ -1,5 +1,18 @@
-<FilesMatch "\.(php|phtml|php3|php4|php5|php7|phar|pl|py|cgi|sh)$">
-  Require all denied
+# Blokira izvrsavanje skripti u uploads/, ali NE dira serviranje slika.
+#
+# NAMERNO se ovde NE koristi "php_flag engine off" ni "Options -ExecCGI" —
+# na Telekom cPanel hostingu (PHP 8.2 preko php-fpm/cgi, ne mod_php) obe te
+# direktive obaraju server sa HTTP 500, cak i za obicne slike, jer ih taj
+# handler ne prepoznaje. Umesto toga, blokiramo pristup skript-fajlovima na
+# nivou Apache-a (pre nego sto zahtev uopste stigne do bilo kog PHP handlera),
+# sto je najkompatibilniji nacin i ne zavisi od toga kako je PHP povezan.
+
+<FilesMatch "\.(php|php\d|phtml|phar|pl|py|cgi|sh)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
 </FilesMatch>
-php_flag engine off
-Options -ExecCGI -Indexes
