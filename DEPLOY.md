@@ -1,66 +1,50 @@
 # Deploy na cPanel (Git)
 
-Koraci za deploy ovog repoa na cPanel hosting preko ugrađenog Git Version Control alata.
+Sajt je live na **crashbars.rs**, Telekom cPanel hosting (`crashbar` nalog), deploy ide
+preko cPanel-ovog Git Version Control alata i `.cpanel.yml` u root-u repoa.
 
-## 1. Prvi deploy
+## Kako radi automatski deploy (`.cpanel.yml`)
 
-1. cPanel → **Git Version Control** → **Create**.
-   - Repository URL: URL ovog GitHub repoa (posle push-a).
-   - Repository Path: npr. `public_html` (ako je ovo jedini sajt na nalogu) ili poddirektorijum pa symlink/alias na domen.
-   - Branch: `main`.
-2. Sačekaj da cPanel klonira repo u zadati folder.
-3. Proveri dozvole (cPanel File Manager ili SSH):
+Pri svakom "Update from Remote" / "Deploy HEAD Commit" u cPanel Git Version Control,
+cPanel iz `.cpanel.yml` pokreće `rsync -a` (bez `--delete`) iz repoa u
+`/home/crashbar/public_html/`. To znači:
+
+- Kopira/ažurira samo fajlove koji postoje u repou — kod, `.htaccess` fajlove, brend
+  slike iz `uploads/`.
+- **Ne briše i ne dira** ništa što je na serveru a nije u repou: `data/users.json`,
+  `data/attempts.json`, sve klijentski otpremljene slike u `uploads/` (nasumična imena),
+  i `content.json`.
+- `content.json` je eksplicitno izuzet iz kopiranja (`--exclude`) — i nije praćen u gitu
+  (vidi `.gitignore`). Sadržaj sajta menja se isključivo preko admin panela direktno na
+  serveru; git deploy ga nikad ne dodiruje.
+- `README.md`, `DEPLOY.md`, `CLAUDE.md` su takođe izuzeti iz kopiranja — to su interni
+  dev dokumenti (README dokumentuje i podrazumevanu admin lozinku pre promene), nema
+  razloga da budu javno dostupni na `public_html/`.
+
+## Prvi deploy na novom nalogu (ako se ikad ponavlja od nule)
+
+1. cPanel → **Git Version Control** → **Create** → Repository URL ovog GitHub repoa,
+   Repository Path tako da `.cpanel.yml` deploy cilja `/home/crashbar/public_html/`,
+   Branch `main`.
+2. Posle prvog uspešnog deploya, proveri dozvole (cPanel File Manager ili SSH):
    ```
    chmod 755 data uploads
    chmod 664 content.json
    ```
-   `data/` i `uploads/` moraju biti upisivi za PHP (owner/group write), a `content.json`
-   mora ostati upisiv jer admin panel u njega piše pri svakoj izmeni.
-4. Pošto `data/users.json` i `data/attempts.json` **nisu** u repou (namerno isključeni,
-   vidi `.gitignore`), napravi ih ručno na serveru pri prvom postavljanju:
-   - Najlakše: otvori `https://domen.rs/admin/` — ako `data/users.json` ne postoji,
-     proveri da li aplikacija ima ugrađen inicijalni setup (pogledaj `inc/functions.php`);
-     ako ne, ručno kopiraj lokalni `data/users.json` na server preko File Manager-a
-     (SFTP/upload), NE preko gita.
-   - `data/attempts.json` nije obavezan unapred — kreira ga aplikacija sama pri prvom
-     neuspelom pokušaju prijave (proveri da je `data/` upisiv da bi to uspelo).
-5. Otvori `https://domen.rs/admin/`, prijavi se, **odmah promeni lozinku**
-   (podrazumevana je `admin` / `SebaAdmin2026!` — vidi README.md).
+   `data/` i `uploads/` moraju biti upisivi za PHP, `content.json` takođe (admin panel
+   u njega piše pri svakoj izmeni).
+3. Pošto `data/users.json` ne postoji u repou, prvi put ga ručno postavi preko File
+   Manager-a / SFTP-a (van gita) — vidi prethodnu prepisku za generisanje bcrypt hash-a.
+4. Ako `content.json` ne postoji na serveru, ubaci ga ručno (File Manager) da sajt ima
+   početni sadržaj — git deploy ga posle toga više ne dira.
+5. Otvori `https://crashbars.rs/admin/`, prijavi se, **odmah promeni lozinku**.
 
-## 2. VAŽNO — posle prvog deploya zaključaj content.json
-
-`content.json` je namerno uključen u prvi commit da server dobije početni sadržaj sajta.
-Ali čim je sajt živ, klijent (Seba) menja sadržaj kroz admin panel direktno na serveru —
-taj fajl se više ne sme prepisivati sa gita.
-
-Odmah posle prvog uspešnog deploya:
-
-1. Otvori `.gitignore` u repou i otkomentariši/dodaj liniju:
-   ```
-   content.json
-   ```
-2. Ukloni ga iz praćenja (ali ostavi fajl na disku):
-   ```
-   git rm --cached content.json
-   git commit -m "Prestani da pratiš content.json posle prvog deploya"
-   git push
-   ```
-3. Na serveru, posle sledećeg `git pull`, cPanel Git alat neće više dirati
-   `content.json` — Sebine izmene kroz admin panel ostaju netaknute.
-
-Ako ovaj korak preskočiš, sledeći `git pull` na serveru može prepisati živi sadržaj
-sa verzijom iz repoa i obrisati sve što je klijent uneo kroz CMS.
-
-## 3. Naredni update-i (deploy izmena koda)
+## Naredni update-i (deploy izmena koda)
 
 U cPanel Git Version Control → izaberi repo → **Pull or Deploy** → **Update from Remote**,
-ili preko SSH:
-```
-git pull origin main
-```
-Pošto `content.json`, `data/users.json`, `data/attempts.json` i korisnički upload-ovani
-fajlovi nisu praćeni (posle koraka 2), pull menja samo kod — sadržaj i uploads ostaju
-netaknuti.
+zatim **Deploy HEAD Commit** (ili ekvivalentno dugme koje pokreće `.cpanel.yml`).
+`content.json`, `data/users.json`, `data/attempts.json` i klijentski uploadi ostaju
+netaknuti — `.cpanel.yml` ih ne kopira i rsync bez `--delete` ih ne briše.
 
 ## Dozvole — rezime
 

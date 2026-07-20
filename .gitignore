@@ -22,13 +22,9 @@ Thumbs.db
 # === lokalna Claude Code podešavanja ===
 .claude/settings.local.json
 
-# ============================================================
-# VAŽNO — content.json:
-# Trenutno je NAMERNO UKLJUČEN u git (ne u listi iznad) da server
-# pri prvom deployu dobije početni sadržaj sajta.
-#
-# ODMAH POSLE PRVOG DEPLOYA: dodaj ovde liniju
-#   content.json
-# da budući `git pull` na hostingu ne bi pregazio Sebin živi
-# sadržaj (izmene kroz admin panel) verzijom iz repoa.
-# ============================================================
+# === content.json — živi sadržaj sajta, menja se na serveru kroz admin ===
+# Sajt je live, prvi deploy je odavno gotov — content.json je OTKAČEN iz
+# praćenja (git rm --cached) da ga budući git pull/deploy nikad ne pregazi
+# Sebinim izmenama sa servera. Ako ikad zatreba da se resetuje početni
+# sadržaj, to se radi ručno (upload preko File Manager-a), ne preko gita.
+content.json
