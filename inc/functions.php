@@ -17,6 +17,16 @@ if (!function_exists('mb_substr')) {
 if (!function_exists('mb_strlen')) {
     function mb_strlen(string $s): int { return strlen($s); }
 }
+if (!function_exists('mb_strtolower')) {
+    function mb_strtolower(string $s): string {
+        return strtr(strtolower($s), ['Č' => 'č', 'Ć' => 'ć', 'Ž' => 'ž', 'Š' => 'š', 'Đ' => 'đ']);
+    }
+}
+if (!function_exists('mb_strtoupper')) {
+    function mb_strtoupper(string $s): string {
+        return strtr(strtoupper($s), ['č' => 'Č', 'ć' => 'Ć', 'ž' => 'Ž', 'š' => 'Š', 'đ' => 'Đ']);
+    }
+}
 
 /* fallback za PHP < 8.0 */
 if (!function_exists('str_starts_with')) {
@@ -45,6 +55,13 @@ function save_content(array $data): bool {
     $tmp = SEBA_CONTENT . '.tmp';
     if (file_put_contents($tmp, $json, LOCK_EX) === false) return false;
     return rename($tmp, SEBA_CONTENT);
+}
+
+/* URL-bezbedan slug (npr. za filter po marki: "Can-Am" -> "can-am"). */
+function seba_slug(string $s): string {
+    $s = mb_strtolower(trim($s));
+    $s = (string)preg_replace('/[^a-z0-9]+/u', '-', $s);
+    return trim($s, '-');
 }
 
 /* Dozvoljene putanje slika: lokalni upload ili https URL. */

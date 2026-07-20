@@ -8,6 +8,49 @@ function section_head(string $kicker, string $title): string {
         . '</header>';
 }
 
+/*
+ * Renderuje kartice radova (bez omotača <div class="grid projects">, poziva se unutar njega).
+ * Koristi se i na početnoj (najnoviji radovi) i na radovi.php (svi radovi + filter).
+ * $activeBrandSlug: ako je zadat, kartice čija marka (seba_slug) ne odgovara dobijaju
+ * atribut hidden već na serveru — radovi.php koristi ovo za ispravan prikaz i bez JS-a
+ * pri direktnom otvaranju linka sa ?marka=..., JS posle preuzima filtriranje bez reload-a.
+ */
+function render_project_cards(array $items, string $activeBrandSlug = ''): void {
+    foreach ($items as $it) {
+        $imgs = [];
+        foreach ((array)($it['images'] ?? []) as $iv) {
+            $src = safe_image_src((string)$iv);
+            if ($src !== '') $imgs[] = $src;
+        }
+        if (!$imgs && !empty($it['image'])) { // legacy podatak pre migracije na galeriju
+            $legacy = safe_image_src((string)$it['image']);
+            if ($legacy !== '') $imgs[] = $legacy;
+        }
+        $count = count($imgs);
+        $name = (string)($it['name'] ?? '');
+        $desc = (string)($it['desc'] ?? '');
+        $brand = trim((string)($it['brand'] ?? ''));
+        $brandSlug = seba_slug($brand);
+        $search = mb_strtolower(trim($brand . ' ' . $name . ' ' . $desc));
+        $hidden = $activeBrandSlug !== '' && $brandSlug !== $activeBrandSlug;
+        ?>
+      <article class="proj" data-brand="<?= e($brandSlug) ?>" data-search="<?= e($search) ?>"<?= $hidden ? ' hidden' : '' ?>>
+        <?php if ($count): ?>
+        <a class="proj-media" href="<?= e($imgs[0]) ?>" data-gallery="<?= e(json_encode($imgs)) ?>" data-gallery-name="<?= e($name) ?>">
+          <img src="<?= e($imgs[0]) ?>" alt="<?= e($name) ?>" loading="lazy">
+          <?php if ($count > 1): ?><span class="proj-count">1/<?= $count ?></span><?php endif; ?>
+        </a>
+        <?php endif; ?>
+        <div class="proj-body">
+          <?php if ($brand !== ''): ?><span class="proj-brand"><?= e($brand) ?></span><?php endif; ?>
+          <h3><?= e($name) ?></h3>
+          <p class="proj-desc"><?= e($desc) ?></p>
+        </div>
+      </article>
+        <?php
+    }
+}
+
 function render_section(array $sec, array $kickers): void {
     $f = $sec['fields'] ?? [];
     $id = e($sec['id']);
@@ -85,36 +128,18 @@ function render_section(array $sec, array $kickers): void {
 </section>
 <?php break;
 
-        case 'projects': ?>
+        case 'projects':
+            $allItems = $f['items'] ?? [];
+            $latest = array_reverse(array_slice($allItems, -6)); // poslednjih 6 dodatih, najnoviji prvi
+        ?>
 <section class="sec reveal" id="<?= $id ?>">
   <div class="wrap">
     <?= section_head($kick, $f['title'] ?? 'Radovi') ?>
     <div class="grid projects">
-      <?php foreach (($f['items'] ?? []) as $it):
-          $imgs = [];
-          foreach ((array)($it['images'] ?? []) as $iv) {
-              $src = safe_image_src((string)$iv);
-              if ($src !== '') $imgs[] = $src;
-          }
-          if (!$imgs && !empty($it['image'])) { // legacy podatak pre migracije na galeriju
-              $legacy = safe_image_src((string)$it['image']);
-              if ($legacy !== '') $imgs[] = $legacy;
-          }
-          $count = count($imgs);
-      ?>
-      <article class="proj">
-        <?php if ($count): ?>
-        <a class="proj-media" href="<?= e($imgs[0]) ?>" data-gallery="<?= e(json_encode($imgs)) ?>" data-gallery-name="<?= e($it['name'] ?? '') ?>">
-          <img src="<?= e($imgs[0]) ?>" alt="<?= e($it['name'] ?? '') ?>" loading="lazy">
-          <?php if ($count > 1): ?><span class="proj-count">1/<?= $count ?></span><?php endif; ?>
-        </a>
-        <?php endif; ?>
-        <div class="proj-body">
-          <h3><?= e($it['name'] ?? '') ?></h3>
-          <p class="proj-desc"><?= e($it['desc'] ?? '') ?></p>
-        </div>
-      </article>
-      <?php endforeach; ?>
+      <?php render_project_cards($latest); ?>
+    </div>
+    <div class="sec-more">
+      <a class="btn-ghost" href="radovi.php">Svi radovi</a>
     </div>
   </div>
 </section>

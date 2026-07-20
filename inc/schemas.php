@@ -45,6 +45,7 @@ function seba_schemas(): array {
             'title' => ['text', 'Naslov sekcije'],
             'items' => ['items', 'Projekti', [
                 'name'   => ['text', 'Model motora'],
+                'brand'  => ['text', 'Marka motora (npr. Honda, BMW)'],
                 'desc'   => ['text', 'Šta je rađeno'],
                 'images' => ['images', 'Fotografije'],
             ]],
@@ -79,6 +80,34 @@ function seba_schemas(): array {
     ];
 }
 
+/* Normalizacija marke motora: trim + Veliko Slovo Svake Reči (i dela posle crte, npr. Can-Am),
+   sem poznatih skraćenica koje ostaju velikim slovima (BMW, KTM). */
+function normalize_brand(string $brand): string {
+    $brand = trim((string)preg_replace('/\s+/', ' ', $brand));
+    if ($brand === '') return '';
+    $upper = ['BMW', 'KTM'];
+    $words = explode(' ', $brand);
+    foreach ($words as &$w) {
+        $known = null;
+        foreach ($upper as $u) {
+            if (mb_strtolower($w) === mb_strtolower($u)) { $known = $u; break; }
+        }
+        if ($known !== null) {
+            $w = $known;
+            continue;
+        }
+        $parts = explode('-', $w);
+        foreach ($parts as &$p) {
+            if ($p === '') continue;
+            $p = mb_strtoupper(mb_substr($p, 0, 1)) . mb_strtolower(mb_substr($p, 1));
+        }
+        unset($p);
+        $w = implode('-', $parts);
+    }
+    unset($w);
+    return implode(' ', $words);
+}
+
 /* Validacija podataka sekcije prema šemi: propušta samo poznata polja, sve svodi na stringove. */
 function validate_section_fields(string $type, array $input): ?array {
     $schemas = seba_schemas();
@@ -102,7 +131,12 @@ function validate_section_fields(string $type, array $input): ?array {
                         $clean[$sk] = array_slice($imgs, 0, 20);
                     } else {
                         $val = trim((string)($item[$sk] ?? ''));
-                        $clean[$sk] = $sdef[0] === 'image' ? safe_image_src($val) : $val;
+                        if ($sdef[0] === 'image') {
+                            $val = safe_image_src($val);
+                        } elseif ($sk === 'brand') {
+                            $val = normalize_brand($val);
+                        }
+                        $clean[$sk] = $val;
                     }
                 }
                 $hasContent = false;
