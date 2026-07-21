@@ -108,6 +108,82 @@ function seba_backup_path(string $filename): ?string {
     return is_file($path) ? $path : null;
 }
 
+/* ---------- upravljanje slikama u uploads/ ----------
+ * uploads/ samo raste — svaka otpremljena slika ostaje zauvek, čak i posle
+ * zamene u CMS-u. Ovo daje pregled šta se stvarno koristi na sajtu (skeniranjem
+ * content.json) da bi se neiskorišćene slike mogle bezbedno obrisati. */
+
+/* Brend slike koje su deo git repoa i/ili se koriste van content.json
+   (favicon/logo su hardkodovani u inc/layout.php) — nikad ih ne nudimo za
+   brisanje kroz ovaj alat, bez obzira na rezultat skeniranja upotrebe. */
+function seba_protected_uploads(): array {
+    return [
+        'favicon.png', 'seba-logo_2x.png', 'seba-crashbar.png',
+        'Seba-Crashbar-home-slider2.jpg', 'index.html',
+    ];
+}
+
+/* Rekurzivno prikuplja sve lokalne (uploads/...) putanje slika iz proizvoljne
+   strukture polja sekcije — radi i za pojedinačno 'image' polje i za 'items'/
+   'images' nizove, bez da zna imena konkretnih polja. */
+function seba_collect_image_paths($value, array &$used): void {
+    if (is_string($value)) {
+        $src = safe_image_src($value);
+        if ($src !== '' && str_starts_with($src, 'uploads/')) $used[$src] = true;
+        return;
+    }
+    if (is_array($value)) {
+        foreach ($value as $v) seba_collect_image_paths($v, $used);
+    }
+}
+
+/* Skenira ceo content.json i vraća set (uploads/ime.jpg => true) svih slika
+   koje se trenutno stvarno koriste na sajtu. */
+function seba_used_uploads(array $content): array {
+    $used = [];
+    foreach (seba_protected_uploads() as $p) $used['uploads/' . $p] = true;
+    foreach ($content['sections'] ?? [] as $sec) {
+        seba_collect_image_paths($sec['fields'] ?? [], $used);
+    }
+    return $used;
+}
+
+/* Lista svih slika u uploads/ sa statusom (koristi se / nije u upotrebi / zaštićena). */
+function seba_list_uploads(array $content): array {
+    $used = seba_used_uploads($content);
+    $protected = array_flip(seba_protected_uploads());
+    /* obican glob('*') + rucni filter po ekstenziji, umesto GLOB_BRACE —
+       ta zastavica nije garantovano dostupna na svim hostinzima */
+    $allExt = ['jpg', 'jpeg', 'png', 'webp'];
+    $files = glob(SEBA_UPLOADS . '/*') ?: [];
+    $out = [];
+    foreach ($files as $f) {
+        if (!is_file($f)) continue;
+        $ext = mb_strtolower((string)pathinfo($f, PATHINFO_EXTENSION));
+        if (!in_array($ext, $allExt, true)) continue;
+        $name = basename($f);
+        $rel = 'uploads/' . $name;
+        $out[] = [
+            'file' => $name,
+            'size' => (int)filesize($f),
+            'mtime' => (int)filemtime($f),
+            'used' => isset($used[$rel]),
+            'protected' => isset($protected[$name]),
+        ];
+    }
+    usort($out, fn($a, $b) => $b['mtime'] <=> $a['mtime']);
+    return $out;
+}
+
+/* Validira ime fajla za brisanje (samo goli naziv fajla, bez putanje) i
+   potvrđuje da fajl stvarno postoji u uploads/, vraća punu putanju ili null. */
+function seba_upload_path(string $filename): ?string {
+    if ($filename === '' || $filename !== basename($filename)) return null;
+    if (!preg_match('/^[A-Za-z0-9_.-]+\.(jpg|jpeg|png|webp)$/i', $filename)) return null;
+    $path = SEBA_UPLOADS . '/' . $filename;
+    return is_file($path) ? $path : null;
+}
+
 /* URL-bezbedan slug (npr. za filter po marki: "Can-Am" -> "can-am"). */
 function seba_slug(string $s): string {
     $s = mb_strtolower(trim($s));

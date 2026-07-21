@@ -243,4 +243,32 @@
       });
     });
   }
+
+  /* ---------- brisanje neiskorišćenih slika ---------- */
+  var uploadsView = document.querySelector('.view[data-view="uploads"]');
+  if (uploadsView) {
+    uploadsView.addEventListener("click", function (e) {
+      var btn = e.target.closest(".upload-delete");
+      if (!btn) return;
+      var file = btn.dataset.file;
+      if (!confirm('Obrisati sliku "' + file + '"? Ovo se ne može poništiti.')) return;
+      btn.disabled = true;
+      btn.textContent = "Brisanje…";
+      post({ action: "delete_upload", file: file }).then(function (res) {
+        if (res.ok) {
+          var card = btn.closest(".upload-card");
+          if (card) card.remove();
+          showToast("Slika obrisana.");
+        } else {
+          showToast(res.error || "Greška.", true);
+          btn.disabled = false;
+          btn.textContent = "Obriši";
+        }
+      }).catch(function () {
+        showToast("Greška u mreži.", true);
+        btn.disabled = false;
+        btn.textContent = "Obriši";
+      });
+    });
+  }
 })();

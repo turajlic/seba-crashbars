@@ -148,6 +148,24 @@ switch ($action) {
         json_out(['ok' => true, 'path' => 'uploads/' . $name]);
     }
 
+    /* brisanje neiskorišćene otpremljene slike iz uploads/ — server sam ponovo
+       proverava da li je slika stvarno neiskorišćena (ne veruje klijentu), i
+       nikad ne dozvoljava brisanje zaštićenih brend slika */
+    case 'delete_upload': {
+        $name = (string)($_POST['file'] ?? '');
+        $path = seba_upload_path($name);
+        if ($path === null) json_out(['ok' => false, 'error' => 'Slika nije pronađena.'], 404);
+        if (in_array($name, seba_protected_uploads(), true)) {
+            json_out(['ok' => false, 'error' => 'Ova slika je zaštićena i ne može da se obriše.'], 400);
+        }
+        $used = seba_used_uploads($content);
+        if (isset($used['uploads/' . $name])) {
+            json_out(['ok' => false, 'error' => 'Slika se trenutno koristi na sajtu — prvo je ukloni iz sekcije.'], 400);
+        }
+        if (!@unlink($path)) json_out(['ok' => false, 'error' => 'Brisanje nije uspelo.'], 500);
+        json_out(['ok' => true]);
+    }
+
     default:
         json_out(['ok' => false, 'error' => 'Nepoznata akcija.'], 400);
 }

@@ -41,6 +41,10 @@ $user = e($_SESSION['seba_user']);
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5h5"/><path d="M12 8v5l3 2"/></svg>
         Sigurnosne kopije
       </button>
+      <button type="button" class="side-link" data-view="uploads">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="9" r="1.5"/><path d="m5 17 4.5-5 3 3.5L16 11l3 6"/></svg>
+        Slike
+      </button>
     </nav>
     <div class="sidebar-foot">
       <a href="../" target="_blank" rel="noopener">Pogledaj sajt ↗</a>
@@ -247,6 +251,38 @@ $user = e($_SESSION['seba_user']);
         <span class="backup-size"><?= e(number_format($b['size'] / 1024, 1)) ?> KB</span>
         <a class="btn-ghost" href="backup.php?file=<?= e($b['file']) ?>" target="_blank" rel="noopener">Preuzmi</a>
         <button type="button" class="btn-ghost backup-restore" data-file="<?= e($b['file']) ?>">Vrati ovu verziju</button>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+  </section>
+
+  <!-- VIEW: Slike -->
+  <section class="view" data-view="uploads">
+    <div class="content-head">
+      <h1>Slike</h1>
+      <p>Sve otpremljene slike u <code>uploads/</code>. „Koristi se" znači da je slika trenutno postavljena u nekoj sekciji — takve se ne mogu obrisati odavde (prvo je ukloni iz sekcije). Brend slike (logo, favicon, naslovna) su uvek zaštićene.</p>
+    </div>
+    <?php $uploadsList = seba_list_uploads($content); ?>
+    <?php if (!$uploadsList): ?>
+    <p class="backup-empty">Nema otpremljenih slika.</p>
+    <?php else: ?>
+    <ul class="upload-grid" id="uploadGrid">
+      <?php foreach ($uploadsList as $u): ?>
+      <li class="upload-card" data-file="<?= e($u['file']) ?>">
+        <img class="upload-thumb" src="../uploads/<?= e($u['file']) ?>" alt="" loading="lazy">
+        <div class="upload-meta">
+          <span class="upload-name" title="<?= e($u['file']) ?>"><?= e($u['file']) ?></span>
+          <span class="upload-size"><?= e(number_format($u['size'] / 1024, 1)) ?> KB</span>
+        </div>
+        <?php if ($u['protected']): ?>
+        <span class="upload-badge upload-badge-protected">Zaštićena</span>
+        <?php elseif ($u['used']): ?>
+        <span class="upload-badge upload-badge-used">Koristi se</span>
+        <?php else: ?>
+        <span class="upload-badge upload-badge-free">Nije u upotrebi</span>
+        <button type="button" class="btn-ghost upload-delete" data-file="<?= e($u['file']) ?>">Obriši</button>
+        <?php endif; ?>
       </li>
       <?php endforeach; ?>
     </ul>
