@@ -27,6 +27,7 @@ body {
   font-size: 1.02rem;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 img { max-width: 100%; display: block; }
@@ -120,6 +121,17 @@ a { color: inherit; }
   transition: transform .22s ease;
 }
 .nav.open { transform: none; }
+/* Eksplicitan reset na sam tekst — position:fixed + z-index na .nav pravi sopstveni
+   compositing sloj, a -webkit-font-smoothing sa <body> se ne nasleđuje pouzdano preko
+   te granice (poznato ponašanje na Windows Chrome/Edge). Bez ovoga belo/svetlo slovo
+   na skoro crnoj pozadini (.nav, .nav-tel-inline) može da padne na ClearType subpixel
+   anti-aliasing i pokaže crveno-plavi "dupli rub" na ivicama slova. */
+.nav a, .nav-tel-inline, .nav-close {
+  text-shadow: none;
+  filter: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
 .nav a {
   text-decoration: none; font-family: var(--display); text-transform: uppercase;
   font-size: clamp(1.5rem, 7vw, 2.1rem); font-weight: 400; letter-spacing: .01em;
