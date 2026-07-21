@@ -155,23 +155,30 @@ h1 { font-size: 1.5rem; font-weight: 700; }
 .backup-row .backup-restore { margin-left: 0; }
 .backup-empty { color: var(--mut); }
 
-/* slike (uploads/) */
-.upload-grid { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+/* slike (uploads/) — kompaktna mreža, u stilu WordPress Media biblioteke:
+   sitne kvadratne minijature, fiksna širina kolone (ne razvlače se). */
+.upload-grid { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, 118px); gap: 10px; }
 .upload-card {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
-  padding: 10px; display: grid; gap: 8px; box-shadow: 0 1px 2px rgba(0,0,0,.04); position: relative;
+  padding: 6px; display: grid; gap: 5px; box-shadow: 0 1px 2px rgba(0,0,0,.04); position: relative;
 }
-.upload-thumb { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: var(--radius); background: var(--panel-2); }
-.upload-meta { display: grid; gap: 2px; }
-.upload-name { font-size: .78rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.upload-size { font-size: .76rem; color: var(--mut); }
+.upload-thumb { width: 100%; aspect-ratio: 1/1; object-fit: cover; border-radius: 3px; background: var(--panel-2); }
+.upload-meta { display: grid; gap: 1px; }
+.upload-name { font-size: .68rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.upload-size { font-size: .64rem; color: var(--mut); }
 .upload-badge {
-  justify-self: start; font-size: .72rem; font-weight: 600; padding: 3px 9px; border-radius: 100px;
+  justify-self: start; font-size: .62rem; font-weight: 600; padding: 2px 7px; border-radius: 100px;
 }
 .upload-badge-used { background: #e5f6ea; color: #146c2e; }
 .upload-badge-protected { background: #eef1f3; color: var(--mut); }
 .upload-badge-free { background: #fdecea; color: var(--err); }
-.upload-delete { justify-self: start; }
+.upload-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+.upload-actions button {
+  background: var(--panel); border: 1px solid var(--line); color: var(--mut);
+  font-size: .64rem; padding: 3px 7px; border-radius: 3px; line-height: 1.3;
+}
+.upload-actions button:hover { border-color: var(--blue); color: var(--blue); }
+.upload-actions .upload-delete:hover { border-color: var(--err); color: var(--err); }
 
 /* panel forms (settings/password) */
 .panel-form {

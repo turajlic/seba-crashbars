@@ -244,31 +244,87 @@
     });
   }
 
-  /* ---------- brisanje neiskorišćenih slika ---------- */
+  /* ---------- slike: brisanje, kopiranje putanje, samostalno otpremanje ---------- */
   var uploadsView = document.querySelector('.view[data-view="uploads"]');
   if (uploadsView) {
     uploadsView.addEventListener("click", function (e) {
-      var btn = e.target.closest(".upload-delete");
-      if (!btn) return;
-      var file = btn.dataset.file;
-      if (!confirm('Obrisati sliku "' + file + '"? Ovo se ne može poništiti.')) return;
-      btn.disabled = true;
-      btn.textContent = "Brisanje…";
-      post({ action: "delete_upload", file: file }).then(function (res) {
-        if (res.ok) {
-          var card = btn.closest(".upload-card");
-          if (card) card.remove();
-          showToast("Slika obrisana.");
+      var copyBtn = e.target.closest(".upload-copy");
+      if (copyBtn) {
+        var path = copyBtn.dataset.path;
+        var done = function () {
+          var old = copyBtn.textContent;
+          copyBtn.textContent = "Kopirano ✓";
+          setTimeout(function () { copyBtn.textContent = old; }, 1500);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(path).then(done).catch(function () {
+            showToast("Kopiranje nije uspelo — putanja: " + path, true);
+          });
         } else {
-          showToast(res.error || "Greška.", true);
-          btn.disabled = false;
-          btn.textContent = "Obriši";
+          showToast("Putanja: " + path);
         }
-      }).catch(function () {
-        showToast("Greška u mreži.", true);
-        btn.disabled = false;
-        btn.textContent = "Obriši";
-      });
+        return;
+      }
+
+      var delBtn = e.target.closest(".upload-delete");
+      if (delBtn) {
+        var file = delBtn.dataset.file;
+        if (!confirm('Obrisati sliku "' + file + '"? Ovo se ne može poništiti.')) return;
+        delBtn.disabled = true;
+        delBtn.textContent = "Brisanje…";
+        post({ action: "delete_upload", file: file }).then(function (res) {
+          if (res.ok) {
+            var card = delBtn.closest(".upload-card");
+            if (card) card.remove();
+            showToast("Slika obrisana.");
+          } else {
+            showToast(res.error || "Greška.", true);
+            delBtn.disabled = false;
+            delBtn.textContent = "Obriši";
+          }
+        }).catch(function () {
+          showToast("Greška u mreži.", true);
+          delBtn.disabled = false;
+          delBtn.textContent = "Obriši";
+        });
+      }
     });
+
+    var uploadNewBtn = document.getElementById("uploadNewImage");
+    if (uploadNewBtn) {
+      uploadNewBtn.addEventListener("click", function () {
+        var picker = document.createElement("input");
+        picker.type = "file";
+        picker.accept = "image/jpeg,image/png,image/webp";
+        picker.addEventListener("change", function () {
+          if (!picker.files[0]) return;
+          uploadNewBtn.disabled = true;
+          var status = document.getElementById("uploadNewStatus");
+          if (status) status.textContent = "Otpremanje…";
+          var body = new FormData();
+          body.append("action", "upload");
+          body.append("csrf", CSRF);
+          body.append("image", picker.files[0]);
+          fetch("save.php", { method: "POST", body: body })
+            .then(function (r) { return r.json(); })
+            .then(function (res) {
+              if (res.ok) {
+                showToast("Slika otpremljena.");
+                window.location.reload();
+              } else {
+                showToast(res.error || "Otpremanje nije uspelo.", true);
+                uploadNewBtn.disabled = false;
+                if (status) status.textContent = "";
+              }
+            })
+            .catch(function () {
+              showToast("Greška u mreži.", true);
+              uploadNewBtn.disabled = false;
+              if (status) status.textContent = "";
+            });
+        });
+        picker.click();
+      });
+    }
   }
 })();

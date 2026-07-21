@@ -261,7 +261,11 @@ $user = e($_SESSION['seba_user']);
   <section class="view" data-view="uploads">
     <div class="content-head">
       <h1>Slike</h1>
-      <p>Sve otpremljene slike u <code>uploads/</code>. „Koristi se" znači da je slika trenutno postavljena u nekoj sekciji — takve se ne mogu obrisati odavde (prvo je ukloni iz sekcije). Brend slike (logo, favicon, naslovna) su uvek zaštićene.</p>
+      <p>Sve otpremljene slike u <code>uploads/</code>. Možeš otpremiti slike unapred (za radove ili proizvode koje ćeš dodati kasnije) — „Kopiraj putanju" prebacuje putanju te slike u clipboard, pa je nalepiš u odgovarajuće polje slike kad budeš pravio/la tu sekciju. „Koristi se" znači da je slika trenutno postavljena negde — takve i zaštićene brend slike (logo, favicon, naslovna) ne mogu da se obrišu odavde.</p>
+    </div>
+    <div class="editor-actions backup-actions">
+      <button type="button" class="btn-primary" id="uploadNewImage">+ Otpremi novu sliku</button>
+      <span class="save-status" id="uploadNewStatus" aria-live="polite"></span>
     </div>
     <?php $uploadsList = seba_list_uploads($content); ?>
     <?php if (!$uploadsList): ?>
@@ -281,8 +285,13 @@ $user = e($_SESSION['seba_user']);
         <span class="upload-badge upload-badge-used">Koristi se</span>
         <?php else: ?>
         <span class="upload-badge upload-badge-free">Nije u upotrebi</span>
-        <button type="button" class="btn-ghost upload-delete" data-file="<?= e($u['file']) ?>">Obriši</button>
         <?php endif; ?>
+        <div class="upload-actions">
+          <button type="button" class="upload-copy" data-path="uploads/<?= e($u['file']) ?>" title="Kopiraj putanju u clipboard">Kopiraj putanju</button>
+          <?php if (!$u['protected'] && !$u['used']): ?>
+          <button type="button" class="upload-delete" data-file="<?= e($u['file']) ?>">Obriši</button>
+          <?php endif; ?>
+        </div>
       </li>
       <?php endforeach; ?>
     </ul>
