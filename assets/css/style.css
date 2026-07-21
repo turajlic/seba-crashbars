@@ -106,13 +106,20 @@ a { color: inherit; }
 .nav {
   position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 61;
   width: 100%; height: 100vh; height: 100dvh;
+  /* puna, neprozirna boja — NIKAKAV rgba/backdrop-filter ovde, ništa ispod sme da se nazire */
   background: var(--dark);
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   padding: max(76px, calc(env(safe-area-inset-top, 0px) + 76px)) 24px max(28px, env(safe-area-inset-bottom, 0px));
-  opacity: 0; transition: opacity .22s ease;
   overflow-y: auto; -webkit-overflow-scrolling: touch;
+  /* namerno transform, NE opacity, za ulaznu animaciju: element je uvek 100% neproziran (alpha=1),
+     nikad ne prolazi kroz GPU compositing sloj sa delimičnom providnošću — opacity tranzicija na
+     elementu punom teksta pravi da tekst gubi subpixel (ClearType) anti-aliasing i ostaje sa
+     vidljivim crveno-plavim "duplim rubom" (poznat rendering artefakt), i to ostaje i posle
+     završetka animacije jer browser element ostavlja na kompozitnom sloju. */
+  transform: translateY(-14px);
+  transition: transform .22s ease;
 }
-.nav.open { opacity: 1; }
+.nav.open { transform: none; }
 .nav a {
   text-decoration: none; font-family: var(--display); text-transform: uppercase;
   font-size: clamp(1.5rem, 7vw, 2.1rem); font-weight: 400; letter-spacing: .01em;
