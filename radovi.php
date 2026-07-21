@@ -35,10 +35,11 @@ $brandSlugs = array_map('seba_slug', $brands);
 $requestedMarka = seba_slug((string)($_GET['marka'] ?? ''));
 $activeMarka = in_array($requestedMarka, $brandSlugs, true) ? $requestedMarka : '';
 
-$pageTitle = 'Svi radovi — ' . ($set['site_title'] ?? 'SEBA Crash Bars');
-$pageDesc = 'Pregled svih projekata radionice SEBA Crash Bars — filtriraj po marki motora ili pretraži po modelu.';
+$pageTitle = 'Radovi — ' . ($set['site_title'] ?? 'SEBA Crash Bars');
+$pageDesc = 'Galerija izrađene zaštitne opreme za motocikle — pregledaj radove SEBA Crash Bars, filtriraj po marki motora ili pretraži po modelu.';
+$ogImage = seba_hero_image_url($content['sections'] ?? []);
 
-render_page_head($set, $pageTitle, $pageDesc);
+render_page_head($set, $pageTitle, $pageDesc, 'radovi.php', $ogImage);
 render_page_header($set, $visible, $navNames, true);
 ?>
 

@@ -7,7 +7,29 @@ declare(strict_types=1);
  * da se markup ne duplira.
  */
 
-function render_page_head(array $set, string $title, string $desc): void {
+/* Nalazi sliku hero sekcije i vraća je kao apsolutan URL — koristi se kao
+   podrazumevana og:image/twitter:image na svim stranicama (jedna, prepoznatljiva
+   slika sajta). Menja se automatski čim Seba promeni hero sliku kroz admin,
+   bez posebnog podešavanja. */
+function seba_hero_image_url(array $sections): string {
+    foreach ($sections as $s) {
+        if ($s['type'] === 'hero') {
+            $img = safe_image_src((string)($s['fields']['image'] ?? ''));
+            if ($img !== '') return seba_abs_url($img);
+            break;
+        }
+    }
+    return seba_abs_url('uploads/Seba-Crashbar-home-slider2.jpg');
+}
+
+/*
+ * $path    — putanja stranice relativna na koren sajta (npr. '' za početnu,
+ *            'radovi.php' za tu stranicu) — koristi se za canonical/og:url.
+ * $ogImage — apsolutan URL slike za deljenje (vidi seba_hero_image_url()).
+ */
+function render_page_head(array $set, string $title, string $desc, string $path = '', string $ogImage = ''): void {
+    $url = SEBA_SITE_URL . '/' . ltrim($path, '/');
+    $siteName = $set['site_title'] ?? 'SEBA Crash Bars';
     ?><!doctype html>
 <html lang="sr">
 <head>
@@ -15,11 +37,25 @@ function render_page_head(array $set, string $title, string $desc): void {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title><?= e($title) ?></title>
 <meta name="description" content="<?= e($desc) ?>">
+<link rel="canonical" href="<?= e($url) ?>">
 <link rel="icon" type="image/png" href="uploads/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="<?= e($siteName) ?>">
+<meta property="og:locale" content="sr_RS">
+<meta property="og:url" content="<?= e($url) ?>">
+<meta property="og:title" content="<?= e($title) ?>">
+<meta property="og:description" content="<?= e($desc) ?>">
+<?php if ($ogImage !== ''): ?><meta property="og:image" content="<?= e($ogImage) ?>"><?php endif; ?>
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="<?= e($title) ?>">
+<meta name="twitter:description" content="<?= e($desc) ?>">
+<?php if ($ogImage !== ''): ?><meta name="twitter:image" content="<?= e($ogImage) ?>"><?php endif; ?>
+
 <?php if (!empty($set['ga_id'])): $ga = e($set['ga_id']); ?>
 <script async src="https://www.googletagmanager.com/gtag/js?id=<?= $ga ?>"></script>
 <script>
@@ -118,5 +154,77 @@ function render_page_footer(array $set): void {
   <button class="lb-next" aria-label="Sledeća slika" hidden>›</button>
   <span class="lb-count" hidden></span>
 </div>
+<?php
+}
+
+/* Rastavlja adresu iz Podešavanja (jedno slobodno polje, npr.
+   "Stanka Paunovića Veljka 56, 11090 Beograd, Srbija") na delove za
+   schema.org PostalAddress. Očekuje format "Ulica broj, POBROJ Grad, Država"
+   — ako se ne poklopi (Seba unese nešto neočekivano), vraća samo streetAddress
+   sa celim tekstom umesto da pukne ili izmisli podatke. */
+function seba_parse_address(string $address): array {
+    $address = trim($address);
+    if (preg_match('/^(.+?),\s*(\d{4,6})\s+([^,]+),\s*(.+)$/u', $address, $m)) {
+        $country = trim($m[4]);
+        $countryCode = in_array(mb_strtolower($country), ['srbija', 'serbia'], true) ? 'RS' : $country;
+        return [
+            'streetAddress' => trim($m[1]),
+            'postalCode' => trim($m[2]),
+            'addressLocality' => trim($m[3]),
+            'addressCountry' => $countryCode,
+        ];
+    }
+    return ['streetAddress' => $address, 'postalCode' => '', 'addressLocality' => '', 'addressCountry' => ''];
+}
+
+/*
+ * JSON-LD strukturirani podaci (schema.org) za Google lokalne rezultate/mape.
+ * Tip: MotorcycleRepair (podtip AutomotiveBusiness -> LocalBusiness) — najspecifičniji
+ * dostupan tip za radionicu koja ručno izrađuje/montira zaštitnu opremu po meri
+ * motocikla; tačniji od generičkog LocalBusiness i od AutoPartsStore (koji
+ * implicira prodaju gotovih delova sa police, što ovde nije slučaj).
+ *
+ * Namerno izostavljeno: aggregateRating/review (nema stvarnih recenzija na sajtu —
+ * lažan review markup Google kažnjava), openingHoursSpecification (radno vreme
+ * nije nigde definisano u sadržaju sajta) i priceRange (cene su isključivo po
+ * dogovoru/ponudi, nema realne cenovne kategorije koja bi se mogla upisati bez
+ * izmišljanja). Svi ostali podaci se čitaju iz istih Podešavanja koja se već
+ * prikazuju u footeru/kontaktu, da schema nikad ne može da se razmimoiđe sa
+ * vidljivim sadržajem stranice.
+ */
+function render_local_business_schema(array $set, string $imageUrl): void {
+    $address = seba_parse_address((string)($set['address'] ?? ''));
+    $sameAs = [];
+    if (!empty($set['facebook'])) $sameAs[] = $set['facebook'];
+    if (!empty($set['instagram'])) $sameAs[] = $set['instagram'];
+
+    $schema = [
+        '@context' => 'https://schema.org',
+        '@type' => 'MotorcycleRepair',
+        'name' => $set['site_title'] ?? 'SEBA Crash Bars',
+        'description' => $set['meta_description'] ?? '',
+        'image' => $imageUrl,
+        'url' => SEBA_SITE_URL . '/',
+        'telephone' => $set['phone'] ?? '',
+        'email' => $set['email'] ?? '',
+        'address' => [
+            '@type' => 'PostalAddress',
+            'streetAddress' => $address['streetAddress'],
+            'addressLocality' => $address['addressLocality'],
+            'postalCode' => $address['postalCode'],
+            'addressCountry' => $address['addressCountry'],
+        ],
+        /* Tačne koordinate za "Stanka Paunovića Veljka 56, Beograd (Rakovica)" —
+           potvrđeno geokodiranjem adrese. Ako se radionica ikad preseli, ove
+           koordinate MORAJU ručno da se ažuriraju zajedno sa adresom u Podešavanjima. */
+        'geo' => [
+            '@type' => 'GeoCoordinates',
+            'latitude' => 44.7448066,
+            'longitude' => 20.4536260,
+        ],
+    ];
+    if ($sameAs) $schema['sameAs'] = $sameAs;
+    ?>
+<script type="application/ld+json"><?= json_encode($schema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT) ?></script>
 <?php
 }

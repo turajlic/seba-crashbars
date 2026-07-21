@@ -16,11 +16,16 @@ $navNames = [
     'faq' => 'Pitanja', 'testimonials' => 'Utisci', 'social' => 'Mreže', 'contact' => 'Kontakt',
 ];
 
+$ogImage = seba_hero_image_url($content['sections'] ?? []);
+
 render_page_head(
     $set,
     ($set['site_title'] ?? 'SEBA Crash Bars') . ' — zaštitna oprema za motocikle, Beograd',
-    $set['meta_description'] ?? ''
+    $set['meta_description'] ?? '',
+    '',
+    $ogImage
 );
+render_local_business_schema($set, $ogImage);
 render_page_header($set, $visible, $navNames, false);
 ?>
 

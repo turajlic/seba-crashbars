@@ -5,6 +5,10 @@ define('SEBA_ROOT', dirname(__DIR__));
 define('SEBA_CONTENT', SEBA_ROOT . '/content.json');
 define('SEBA_DATA', SEBA_ROOT . '/data');
 define('SEBA_UPLOADS', SEBA_ROOT . '/uploads');
+/* Kanonski domen sajta — koristi se za apsolutne URL-ove u meta tagovima
+   (Open Graph, canonical) i JSON-LD schema, koje moraju biti apsolutne
+   bez obzira odakle se stranica lokalno testira. */
+define('SEBA_SITE_URL', 'https://crashbars.rs');
 
 /* ---------- osnovno ---------- */
 
@@ -72,6 +76,15 @@ function safe_image_src(?string $src): string {
     $src = ltrim(str_replace(['..', '\\'], '', $src), '/');
     if (str_starts_with($src, 'uploads/') || str_starts_with($src, 'assets/')) return $src;
     return '';
+}
+
+/* Pretvara lokalnu putanju (npr. "uploads/x.jpg") u apsolutan URL na kanonskom
+   domenu — potreban za og:image/twitter:image, jer Facebook/Viber/Twitter ne
+   mogu da učitaju relativnu putanju. Već apsolutan http(s) URL vraća nepromenjen. */
+function seba_abs_url(string $path): string {
+    if ($path === '') return '';
+    if (preg_match('#^https?://#i', $path)) return $path;
+    return SEBA_SITE_URL . '/' . ltrim($path, '/');
 }
 
 /* ---------- sesija / auth ---------- */
