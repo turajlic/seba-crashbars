@@ -146,8 +146,8 @@ a { color: inherit; }
 }
 .nav-tel-inline {
   display: inline-flex; align-items: center; margin-top: 22px;
-  color: #fff !important; background: var(--red); font-weight: 600 !important;
-  font-variant-numeric: tabular-nums; font-family: var(--body); text-transform: none;
+  color: #fff !important; background: var(--red); font-weight: 500 !important;
+  font-variant-numeric: normal; font-family: var(--body); text-transform: none;
   font-size: 1rem !important; padding: 12px 26px !important; border-radius: 100px;
 }
 body.nav-open, body.lb-open { overflow: hidden; }
