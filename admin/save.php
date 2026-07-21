@@ -71,6 +71,19 @@ switch ($action) {
         json_out(['ok' => true]);
     }
 
+    /* vraćanje sadržaja na raniju sigurnosnu kopiju — save_content() usput pravi
+       i novu kopiju TRENUTNOG (živog) stanja pre nego što ga prepiše, tako da je
+       i sam restore moguće poništiti istim mehanizmom */
+    case 'restore_backup': {
+        $file = (string)($_POST['file'] ?? '');
+        $path = seba_backup_path($file);
+        if ($path === null) json_out(['ok' => false, 'error' => 'Kopija nije pronađena.'], 404);
+        $restored = json_decode((string)file_get_contents($path), true);
+        if (!is_array($restored)) json_out(['ok' => false, 'error' => 'Sadržaj kopije je oštećen.'], 400);
+        if (!save_content($restored)) json_out(['ok' => false, 'error' => 'Upis nije uspeo.'], 500);
+        json_out(['ok' => true]);
+    }
+
     /* promena lozinke */
     case 'change_password': {
         $users = load_users();

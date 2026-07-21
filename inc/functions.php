@@ -5,6 +5,8 @@ define('SEBA_ROOT', dirname(__DIR__));
 define('SEBA_CONTENT', SEBA_ROOT . '/content.json');
 define('SEBA_DATA', SEBA_ROOT . '/data');
 define('SEBA_UPLOADS', SEBA_ROOT . '/uploads');
+define('SEBA_BACKUPS', SEBA_DATA . '/backups');
+define('SEBA_BACKUP_KEEP', 15);
 /* Kanonski domen sajta — koristi se za apsolutne URL-ove u meta tagovima
    (Open Graph, canonical) i JSON-LD schema, koje moraju biti apsolutne
    bez obzira odakle se stranica lokalno testira. */
@@ -54,11 +56,56 @@ function load_content(): array {
 }
 
 function save_content(array $data): bool {
+    seba_backup_content();
     $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     if ($json === false) return false;
     $tmp = SEBA_CONTENT . '.tmp';
     if (file_put_contents($tmp, $json, LOCK_EX) === false) return false;
     return rename($tmp, SEBA_CONTENT);
+}
+
+/* ---------- sigurnosne kopije sadržaja ----------
+ * content.json je namerno van gita (živi sadržaj, deploy ga ne dira), pa nema
+ * git istoriju kao zaštitu od greške. Zato pravimo sopstvenu: pre SVAKE izmene
+ * (reorder, čuvanje sekcije, podešavanja) sačuva se vremenski obeležena kopija
+ * TRENUTNOG stanja u data/backups/ — van gita, van weba (data/.htaccess već
+ * blokira ceo folder), automatski, bez ikakve akcije admina. */
+
+/* Kopira trenutni content.json u data/backups/ pre nego što se prepiše, i
+   briše najstarije kopije preko SEBA_BACKUP_KEEP. */
+function seba_backup_content(): void {
+    if (!is_file(SEBA_CONTENT)) return;
+    if (!is_dir(SEBA_BACKUPS)) @mkdir(SEBA_BACKUPS, 0755, true);
+    if (!is_dir(SEBA_BACKUPS)) return;
+
+    @copy(SEBA_CONTENT, SEBA_BACKUPS . '/content-' . date('Ymd-His') . '.json');
+
+    $files = glob(SEBA_BACKUPS . '/content-*.json') ?: [];
+    sort($files); // imena su "content-Ymd-His.json" — abecedno sortiranje = hronoloski
+    $excess = count($files) - SEBA_BACKUP_KEEP;
+    for ($i = 0; $i < $excess; $i++) {
+        @unlink($files[$i]);
+    }
+}
+
+/* Lista sačuvanih kopija, najnovija prva. */
+function seba_list_backups(): array {
+    $files = glob(SEBA_BACKUPS . '/content-*.json') ?: [];
+    sort($files);
+    $files = array_reverse($files);
+    $out = [];
+    foreach ($files as $f) {
+        $out[] = ['file' => basename($f), 'size' => (int)filesize($f), 'mtime' => (int)filemtime($f)];
+    }
+    return $out;
+}
+
+/* Validira ime backup fajla (sprečava path traversal — dozvoljen samo tačan
+   obrazac imena koji sami generišemo) i vraća punu putanju, ili null. */
+function seba_backup_path(string $filename): ?string {
+    if (!preg_match('/^content-\d{8}-\d{6}\.json$/', $filename)) return null;
+    $path = SEBA_BACKUPS . '/' . $filename;
+    return is_file($path) ? $path : null;
 }
 
 /* URL-bezbedan slug (npr. za filter po marki: "Can-Am" -> "can-am"). */

@@ -1,6 +1,7 @@
 # === CMS runtime / secrets — nikad na GitHub ===
 data/users.json
 data/attempts.json
+data/backups/
 
 # === uploads/ — korisnički sadržaj, ne prati se u gitu ===
 # Izuzeci ispod: brend fajlovi koji su deo dizajna i .htaccess/index.html

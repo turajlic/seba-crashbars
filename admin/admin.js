@@ -217,4 +217,30 @@
       else showToast(res.error || "Greška.", true);
     }).catch(function () { showToast("Greška u mreži.", true); });
   });
+
+  /* ---------- vraćanje na sigurnosnu kopiju ---------- */
+  var backupsView = document.querySelector('.view[data-view="backups"]');
+  if (backupsView) {
+    backupsView.addEventListener("click", function (e) {
+      var btn = e.target.closest(".backup-restore");
+      if (!btn) return;
+      if (!confirm("Vratiti sadržaj sajta na ovu raniju verziju? Trenutni sadržaj će prvo biti sačuvan kao nova kopija, pa se i ovo može poništiti.")) return;
+      btn.disabled = true;
+      btn.textContent = "Vraćanje…";
+      post({ action: "restore_backup", file: btn.dataset.file }).then(function (res) {
+        if (res.ok) {
+          showToast("Sadržaj vraćen. Stranica se osvežava…");
+          setTimeout(function () { window.location.reload(); }, 900);
+        } else {
+          showToast(res.error || "Greška.", true);
+          btn.disabled = false;
+          btn.textContent = "Vrati ovu verziju";
+        }
+      }).catch(function () {
+        showToast("Greška u mreži.", true);
+        btn.disabled = false;
+        btn.textContent = "Vrati ovu verziju";
+      });
+    });
+  }
 })();

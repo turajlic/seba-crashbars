@@ -37,6 +37,10 @@ $user = e($_SESSION['seba_user']);
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         Lozinka
       </button>
+      <button type="button" class="side-link" data-view="backups">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/><path d="M12 3v5h5"/><path d="M12 8v5l3 2"/></svg>
+        Sigurnosne kopije
+      </button>
     </nav>
     <div class="sidebar-foot">
       <a href="../" target="_blank" rel="noopener">Pogledaj sajt ↗</a>
@@ -221,6 +225,32 @@ $user = e($_SESSION['seba_user']);
         <span class="save-status" aria-live="polite"></span>
       </div>
     </form>
+  </section>
+
+  <!-- VIEW: Sigurnosne kopije -->
+  <section class="view" data-view="backups">
+    <div class="content-head">
+      <h1>Sigurnosne kopije</h1>
+      <p>Sistem automatski sačuva kopiju sadržaja pre svake izmene (redosled, sekcije, podešavanja). Ako nešto slučajno obrišeš ili pogrešno izmeniš, ovde možeš da se vratiš na raniju verziju.</p>
+    </div>
+    <div class="editor-actions backup-actions">
+      <a class="btn-ghost" href="backup.php?file=current" target="_blank" rel="noopener">Preuzmi trenutni sadržaj</a>
+    </div>
+    <?php $backups = seba_list_backups(); ?>
+    <?php if (!$backups): ?>
+    <p class="backup-empty">Još nema sačuvanih kopija — pojaviće se posle prve sledeće izmene bilo čega na sajtu.</p>
+    <?php else: ?>
+    <ul class="backup-list">
+      <?php foreach ($backups as $b): ?>
+      <li class="backup-row">
+        <span class="backup-date"><?= e(date('d.m.Y. H:i:s', $b['mtime'])) ?></span>
+        <span class="backup-size"><?= e(number_format($b['size'] / 1024, 1)) ?> KB</span>
+        <a class="btn-ghost" href="backup.php?file=<?= e($b['file']) ?>" target="_blank" rel="noopener">Preuzmi</a>
+        <button type="button" class="btn-ghost backup-restore" data-file="<?= e($b['file']) ?>">Vrati ovu verziju</button>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
   </section>
 
   </main>
