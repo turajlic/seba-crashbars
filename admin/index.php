@@ -81,13 +81,32 @@ $user = e($_SESSION['seba_user']);
         <?php foreach ($schema as $key => $def):
             [$ftype, $flabel] = $def;
             $val = $sec['fields'][$key] ?? ($ftype === 'items' ? [] : '');
-            if ($ftype === 'items'): $sub = $def[2]; ?>
+            if ($ftype === 'items'): $sub = $def[2];
+                /* naslov skupljene stavke: prioritet polju 'name' ako postoji
+                   (npr. testimonials — ime osobe je korisnije od celog citata),
+                   inače prvo tekstualno (ne-images) polje po redosledu šeme */
+                $titleKey = isset($sub['name']) ? 'name' : null;
+                if ($titleKey === null) {
+                    foreach ($sub as $sk0 => $sdef0) { if ($sdef0[0] !== 'images') { $titleKey = $sk0; break; } }
+                }
+            ?>
         <fieldset class="items-field" data-field="<?= e($key) ?>">
           <legend><?= e($flabel) ?></legend>
+          <div class="items-field-actions">
+            <button type="button" class="items-expand-all">Raširi sve</button>
+            <button type="button" class="items-collapse-all">Skupi sve</button>
+          </div>
           <div class="items-list">
-            <?php foreach ((array)$val as $item): ?>
-            <div class="item-card">
-              <div class="item-bar"><span class="drag-handle" aria-hidden="true">⠿</span><button type="button" class="item-remove" title="Ukloni stavku">×</button></div>
+            <?php foreach ((array)$val as $item):
+                $titleVal = $titleKey !== null ? mb_substr(trim((string)($item[$titleKey] ?? '')), 0, 60) : '';
+            ?>
+            <div class="item-card is-collapsed">
+              <div class="item-bar">
+                <span class="drag-handle" aria-hidden="true">⠿</span>
+                <button type="button" class="item-toggle"><?= e($titleVal !== '' ? $titleVal : 'Nova stavka') ?></button>
+                <button type="button" class="item-remove" title="Ukloni stavku">×</button>
+              </div>
+              <div class="item-fields">
               <?php foreach ($sub as $sk => $sdef): [$stype, $slabel] = $sdef; ?>
               <?php if ($stype === 'images'): ?>
               <fieldset class="images-fld" data-key="<?= e($sk) ?>">
@@ -111,7 +130,7 @@ $user = e($_SESSION['seba_user']);
               <?php else: $sval = (string)($item[$sk] ?? ''); ?>
               <label class="fld"><?= e($slabel) ?>
                 <?php if ($stype === 'textarea'): ?>
-                <textarea data-key="<?= e($sk) ?>" rows="2"><?= e($sval) ?></textarea>
+                <textarea data-key="<?= e($sk) ?>" rows="2"<?= $sk === $titleKey ? ' data-item-title' : '' ?>><?= e($sval) ?></textarea>
                 <?php elseif ($stype === 'image'): ?>
                 <span class="img-fld" data-key="<?= e($sk) ?>">
                   <input type="text" value="<?= e($sval) ?>" placeholder="uploads/slika.jpg ili https://…">
@@ -120,17 +139,23 @@ $user = e($_SESSION['seba_user']);
                   <img class="img-preview" src="<?= e($psrc) ?>" alt="" <?= $psrc ? '' : 'hidden' ?>>
                 </span>
                 <?php else: ?>
-                <input type="text" data-key="<?= e($sk) ?>" value="<?= e($sval) ?>">
+                <input type="text" data-key="<?= e($sk) ?>" value="<?= e($sval) ?>"<?= $sk === $titleKey ? ' data-item-title' : '' ?>>
                 <?php endif; ?>
               </label>
               <?php endif; ?>
               <?php endforeach; ?>
+              </div>
             </div>
             <?php endforeach; ?>
           </div>
           <template class="item-template">
             <div class="item-card">
-              <div class="item-bar"><span class="drag-handle" aria-hidden="true">⠿</span><button type="button" class="item-remove" title="Ukloni stavku">×</button></div>
+              <div class="item-bar">
+                <span class="drag-handle" aria-hidden="true">⠿</span>
+                <button type="button" class="item-toggle">Nova stavka</button>
+                <button type="button" class="item-remove" title="Ukloni stavku">×</button>
+              </div>
+              <div class="item-fields">
               <?php foreach ($sub as $sk => $sdef): [$stype, $slabel] = $sdef; ?>
               <?php if ($stype === 'images'): ?>
               <fieldset class="images-fld" data-key="<?= e($sk) ?>">
@@ -141,7 +166,7 @@ $user = e($_SESSION['seba_user']);
               <?php else: ?>
               <label class="fld"><?= e($slabel) ?>
                 <?php if ($stype === 'textarea'): ?>
-                <textarea data-key="<?= e($sk) ?>" rows="2"></textarea>
+                <textarea data-key="<?= e($sk) ?>" rows="2"<?= $sk === $titleKey ? ' data-item-title' : '' ?>></textarea>
                 <?php elseif ($stype === 'image'): ?>
                 <span class="img-fld" data-key="<?= e($sk) ?>">
                   <input type="text" value="" placeholder="uploads/slika.jpg ili https://…">
@@ -149,11 +174,12 @@ $user = e($_SESSION['seba_user']);
                   <img class="img-preview" src="" alt="" hidden>
                 </span>
                 <?php else: ?>
-                <input type="text" data-key="<?= e($sk) ?>" value="">
+                <input type="text" data-key="<?= e($sk) ?>" value=""<?= $sk === $titleKey ? ' data-item-title' : '' ?>>
                 <?php endif; ?>
               </label>
               <?php endif; ?>
               <?php endforeach; ?>
+              </div>
             </div>
           </template>
           <button type="button" class="btn-ghost item-add">+ Dodaj stavku</button>

@@ -63,10 +63,36 @@
       itemsList.appendChild(clone);
       newImagesLists.forEach(wireImagesList);
     });
+    var expandAll = fs.querySelector(".items-expand-all");
+    var collapseAll = fs.querySelector(".items-collapse-all");
+    if (expandAll) expandAll.addEventListener("click", function () {
+      itemsList.querySelectorAll(".item-card").forEach(function (c) { c.classList.remove("is-collapsed"); });
+    });
+    if (collapseAll) collapseAll.addEventListener("click", function () {
+      itemsList.querySelectorAll(".item-card").forEach(function (c) { c.classList.add("is-collapsed"); });
+    });
   });
   list.addEventListener("click", function (e) {
     var rm = e.target.closest(".item-remove");
     if (rm && confirm("Ukloniti ovu stavku?")) rm.closest(".item-card").remove();
+  });
+
+  /* sklapanje/rasklapanje pojedinačne stavke — klik na naslov (prvo tekstualno polje) */
+  list.addEventListener("click", function (e) {
+    var toggle = e.target.closest(".item-toggle");
+    if (!toggle) return;
+    toggle.closest(".item-card").classList.toggle("is-collapsed");
+  });
+
+  /* naslov skupljene stavke prati unos uživo, bez čekanja na snimanje */
+  list.addEventListener("input", function (e) {
+    var titleFld = e.target.closest("[data-item-title]");
+    if (!titleFld) return;
+    var card = titleFld.closest(".item-card");
+    var toggle = card && card.querySelector(".item-toggle");
+    if (!toggle) return;
+    var val = titleFld.value.trim();
+    toggle.textContent = val !== "" ? val.slice(0, 60) : "Nova stavka";
   });
 
   /* ---------- slike u galeriji rada (dodaj / ukloni) ---------- */
