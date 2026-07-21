@@ -1,16 +1,25 @@
 (function () {
   "use strict";
 
-  /* drawer meni */
+  /* meni — fullscreen overlay. Stanje se čuva i preko "open" klase (za
+     animaciju) i preko "hidden" atributa (element potpuno van DOM prikaza i
+     van dodirnih/klik interakcija dok je zatvoren — isti obrazac kao
+     .nav-backdrop i .lightbox). Telo stranice se zaključava preko SOPSTVENE
+     klase "nav-open", nezavisno od lightboxa (koji koristi "lb-open") — ni
+     jedno ni drugo ne dira deljeni inline stil, pa zatvaranje jednog ne može
+     da poremeti stanje drugog. */
   var toggle = document.querySelector(".nav-toggle");
   var nav = document.getElementById("mainnav");
   var backdrop = document.querySelector(".nav-backdrop");
   var closeBtn = document.querySelector(".nav-close");
 
   function openNav() {
-    nav.classList.add("open");
+    nav.hidden = false;
     backdrop.hidden = false;
-    requestAnimationFrame(function () { backdrop.classList.add("show"); });
+    requestAnimationFrame(function () {
+      nav.classList.add("open");
+      backdrop.classList.add("show");
+    });
     toggle.setAttribute("aria-expanded", "true");
     document.body.classList.add("nav-open");
   }
@@ -19,7 +28,7 @@
     backdrop.classList.remove("show");
     toggle.setAttribute("aria-expanded", "false");
     document.body.classList.remove("nav-open");
-    setTimeout(function () { backdrop.hidden = true; }, 260);
+    setTimeout(function () { nav.hidden = true; backdrop.hidden = true; }, 260);
   }
   if (toggle && nav) {
     toggle.addEventListener("click", function () {
@@ -27,7 +36,10 @@
     });
     if (closeBtn) closeBtn.addEventListener("click", closeNav);
     if (backdrop) backdrop.addEventListener("click", closeNav);
-    nav.addEventListener("click", function (e) { if (e.target.tagName === "A") closeNav(); });
+    /* klik na sam meni (pozadinu, ne link) takođe zatvara — meni sad pokriva ceo ekran */
+    nav.addEventListener("click", function (e) {
+      if (e.target === nav || e.target.tagName === "A") closeNav();
+    });
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && nav.classList.contains("open")) closeNav();
     });
@@ -73,13 +85,13 @@
       galleryIndex = startIndex || 0;
       showLbImage();
       lb.hidden = false;
-      document.body.style.overflow = "hidden";
+      document.body.classList.add("lb-open");
     }
     function closeLb() {
       lb.hidden = true;
       lbImg.src = "";
       gallery = [];
-      document.body.style.overflow = "";
+      document.body.classList.remove("lb-open");
     }
     function lbNextImg() { galleryIndex = (galleryIndex + 1) % gallery.length; showLbImage(); }
     function lbPrevImg() { galleryIndex = (galleryIndex - 1 + gallery.length) % gallery.length; showLbImage(); }
@@ -101,9 +113,9 @@
       }
     });
     lb.addEventListener("click", function (e) {
-      if (e.target === lb || e.target.classList.contains("lb-close")) closeLb();
-      else if (e.target.classList.contains("lb-next")) lbNextImg();
-      else if (e.target.classList.contains("lb-prev")) lbPrevImg();
+      if (e.target === lb || e.target.closest(".lb-close")) { e.preventDefault(); closeLb(); return; }
+      if (e.target.closest(".lb-next")) { e.preventDefault(); lbNextImg(); return; }
+      if (e.target.closest(".lb-prev")) { e.preventDefault(); lbPrevImg(); }
     });
     document.addEventListener("keydown", function (e) {
       if (lb.hidden) return;

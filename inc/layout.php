@@ -60,7 +60,7 @@ function render_page_header(array $set, array $visible, array $navNames, bool $o
       </button>
     </div>
     <div class="nav-backdrop" hidden></div>
-    <nav id="mainnav" class="nav" aria-label="Glavni meni">
+    <nav id="mainnav" class="nav" aria-label="Glavni meni" hidden>
       <button class="nav-close" aria-label="Zatvori meni">×</button>
       <?php foreach ($visible as $s): if (!isset($navNames[$s['type']])) continue;
           $isProjects = $s['type'] === 'projects';
